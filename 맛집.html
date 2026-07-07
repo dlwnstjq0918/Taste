@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>양재역 맛집 지도 (20선)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 0.5rem;
+            background: #f9fafb;
+        }
+        .quadrant {
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            border-radius: 0.5rem;
+            border: 1px dashed #d1d5db;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .quadrant:hover { background: #eff6ff; border-color: #3b82f6; }
+        .restaurant-card { transition: transform 0.2s; }
+        .restaurant-card:hover { transform: translateY(-5px); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+
+    <header class="max-w-6xl mx-auto mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">🍽️ 양재역 맛집 지도</h1>
+        <p class="text-gray-600 mt-2">현지인들이 추천하는 양재역 인근 맛집 20곳을 한눈에 확인하세요.</p>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <section class="lg:col-span-3">
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button onclick="filterRestaurants('all')" class="px-4 py-2 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition">전체</button>
+                <button onclick="filterRestaurants('korean')" class="px-4 py-2 bg-white border border-gray-300 rounded-full hover:bg-blue-50 transition">한식</button>
+                <button onclick="filterRestaurants('western')" class="px-4 py-2 bg-white border border-gray-300 rounded-full hover:bg-blue-50 transition">일식/양식</button>
+                <button onclick="filterRestaurants('cafe')" class="px-4 py-2 bg-white border border-gray-300 rounded-full hover:bg-blue-50 transition">카페/디저트</button>
+            </div>
+
+            <div id="restaurantList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Cards injected here -->
+            </div>
+        </section>
+
+        <aside class="lg:col-span-1">
+            <div class="sticky top-8">
+                <h2 class="text-xl font-semibold mb-4">📍 구역별 위치</h2>
+                <div class="map-grid">
+                    <div class="quadrant" onclick="filterByLocation('NW')"><span class="font-bold text-blue-600">NW</span><span class="text-xs">출구 1-3</span></div>
+                    <div class="quadrant" onclick="filterByLocation('NE')"><span class="font-bold text-blue-600">NE</span><span class="text-0.5">출구 4-6</span></div>
+                    <div class="quadrant" onclick="filterByLocation('SW')"><span class="font-bold text-blue-600">SW</span><span class="text-xs">출구 7-9</span></div>
+                    <div class="quadrant" onclick="filterByLocation('SE')"><span class="font-bold text-blue-600">SE</span><span class="text-xs">출구 10-12</span></div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        const restaurants = [
+            { id: 1, name: "양재정육식당", type: "korean", loc: "SE", desc: "가성비 최고의 한우 정육식당", tags: ["한우", "가성비"], tel: "02-572-8888", addr: "서울 서초구 바우뫼로 200", link: "https://map.naver.com/v5/search/양재정육식당" },
+            { id: 2, name: "양재닭집", type: "korean", loc: "SE", desc: "레트로한 시장통닭의 정석", tags: ["치킨", "노포"], tel: "02-572-1789", addr: "서울 서초구 남부순환로 2606", link: "https://map.naver.com/v5/search/양재닭집" },
+            { id: 3, name: "미우야", type: "western", loc: "NW", desc: "정통 수제 우동과 소바", tags: ["우동", "일식"], tel: "02-577-6363", addr: "서울 서초구 강남대로23길 96", link: "https://map.naver.com/v5/search/미우야" },
+            { id: 4, name: "신셰프양꼬치", type: "korean", loc: "SW", desc: "잡내 없는 양꼬치와 꿔바로우", tags: ["양꼬치", "술자리"], tel: "02-572-7888", addr: "서울 서초구 강남대로30길 12", link: "https://map.naver.com/v5/search/신셰프양꼬치" },
+            { id: 5, name: "어느멋진날", type: "cafe", loc: "NE", desc: "조용하고 분위기 좋은 커피", tags: ["카페", "디저트"], tel: "02-573-0001", addr: "서울 강남구 강남대로 240", link: "https://map.naver.com/v5/search/어느멋진날" },
+            { id: 6, name: "별미국수", type: "korean", loc: "NW", desc: "점심시간 든든한 국수 한 그릇", tags: ["국수", "점심"], tel: "02-579-2222", addr: "서울 서초구 강남대로27길 7", link: "https://map.naver.com/v5/search/별미국수" },
+            { id: 7, name: "소호정 본점", type: "korean", loc: "SW", desc: "안동국시와 수육 맛집", tags: ["안동국시", "한식"], tel: "02-579-7282", addr: "서울 서초구 논현로 27", link: "https://map.naver.com/v5/search/소호정본점" },
+            { id: 8, name: "임병주산동칼국수", type: "korean", loc: "SW", desc: "미쉐린 가이드 선정 칼국수", tags: ["칼국수", "미쉐린"], tel: "02-3473-7972", addr: "서울 서초구 강남대로37길 65", link: "https://map.naver.com/v5/search/임병주산동칼국수" },
+            { id: 9, name: "하동재첩마을", type: "korean", loc: "SE", desc: "깔끔한 재첩국이 일품", tags: ["재첩국", "해장"], tel: "02-573-1111", addr: "서울 서초구 남부순환로 2610", link: "https://map.naver.com/v5/search/하동재첩마을" },
+            { id: 10, name: "곰포차", type: "korean", loc: "SE", desc: "안주가 맛있는 실내 포장마차", tags: ["포차", "술자리"], tel: "02-575-3333", addr: "서울 서초구 강남대로 100", link: "https://map.naver.com/v5/search/곰포차" },
+            { id: 11, name: "핫쵸", type: "western", loc: "NE", desc: "일본식 오코노미야키 전문", tags: ["일식", "오코노미야키"], tel: "02-571-4444", addr: "서울 서초구 강남대로 250", link: "https://map.naver.com/v5/search/핫쵸" },
+            { id: 12, name: "미분당", type: "western", loc: "NW", desc: "정갈한 쌀국수", tags: ["쌀국수", "점심"], tel: "02-578-5555", addr: "서울 서초구 강남대로27길 5", link: "https://map.naver.com/v5/search/미분당" },
+            { id: 13, name: "바오밥", type: "western", loc: "SW", desc: "수제 맥주와 피자", tags: ["맥주", "피자"], tel: "02-579-6666", addr: "서울 서초구 강남대로30길 20", link: "https://map.naver.com/v5/search/바오밥" },
+            { id: 14, name: "족발야시장", type: "korean", loc: "NE", desc: "쫄깃한 족발과 보쌈", tags: ["족발", "보쌈"], tel: "02-572-7777", addr: "서울 서초구 강남대로 240", link: "https://map.naver.com/v5/search/족발야시장" },
+            { id: 15, name: "강남쌈밥", type: "korean", loc: "SE", desc: "건강한 쌈밥 정식", tags: ["쌈밥", "건강식"], tel: "02-571-8888", addr: "서울 서초구 남부순환로 2620", link: "https://map.naver.com/v5/search/강남쌈밥" },
+            { id: 16, name: "로마옥", type: "western", loc: "NE", desc: "분위기 좋은 이탈리안 레스토랑", tags: ["양식", "분위기"], tel: "02-572-9999", addr: "서울 강남구 강남대로 250", link: "https://map.naver.com/v5/search/로마옥" },
+            { id: 17, name: "그라노", type: "western", loc: "NE", desc: "정통 파스타", tags: ["파스타", "양식"], tel: "02-571-1000", addr: "서울 강남구 강남대로 260", link: "https://map.naver.com/v5/search/그라노" },
+            { id: 18, name: "화포식당", type: "korean", loc: "SW", desc: "숙성 통삼겹살", tags: ["삼겹살", "고기"], tel: "02-572-2000", addr: "서울 서초구 강남대로30길 5", link: "https://map.naver.com/v5/search/화포식당" },
+            { id: 19, name: "룸서비스301", type: "cafe", loc: "SE", desc: "감각적인 인테리어 카페", tags: ["카페", "감성"], tel: "02-573-3000", addr: "서울 서초구 남부순환로 2600", link: "https://map.naver.com/v5/search/룸서비스301" },
+            { id: 20, name: "카페 엣지", type: "cafe", loc: "NW", desc: "조용하게 대화하기 좋은 곳", tags: ["카페", "커피"], tel: "02-579-4000", addr: "서울 서초구 강남대로27길 15", link: "https://map.naver.com/v5/search/카페엣지" }
+        ];
+
+        function renderRestaurants(data) {
+            const list = document.getElementById('restaurantList');
+            list.innerHTML = data.map(r => `
+                <div class="restaurant-card bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-lg text-gray-800">${r.name}</h3>
+                        <span class="text-[10px] font-semibold px-2 py-1 bg-blue-50 text-blue-600 rounded-full">${r.loc}구역</span>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-3">${r.desc}</p>
+                    <div class="text-xs text-gray-500 mb-2 space-y-1">
+                        <p>📍 ${r.addr}</p>
+                        <p>📞 ${r.tel}</p>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between">
+                        <div class="flex gap-1">
+                            ${r.tags.map(t => `<span class="text-[9px] uppercase tracking-wider text-gray-500 bg-gray-100 px-2 py-0.5 rounded">${t}</span>`).join('')}
+                        </div>
+                        <a href="${r.link}" target="_blank" class="text-xs font-bold text-blue-600 hover:underline">지도 보기 →</a>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterRestaurants(type) {
+            if(type === 'all') return renderRestaurants(restaurants);
+            renderRestaurants(restaurants.filter(r => r.type === type));
+        }
+
+        function filterByLocation(loc) {
+            renderRestaurants(restaurants.filter(r => r.loc === loc));
+        }
+
+        window.onload = () => renderRestaurants(restaurants);
+    </script>
+</body>
+</html>
